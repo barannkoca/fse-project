@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -40,9 +40,36 @@ const mockMenuItems: MenuItem[] = [
 ];
 
 const Menu: React.FC = () => {
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const { addItem, items: cartItems, updateQuantity, removeItem, totalPrice } = useCart();
   const navigate = useNavigate();
   const [isCartOpen, setIsCartOpen] = useState(true);
+
+  useEffect(() => {
+  const fetchMenuItems = async () => {
+    try {
+      const response = await fetch('http://localhost:8081/MenuItems');
+      if (!response.ok) throw new Error('Failed to fetch menu items');
+      const data = await response.json();
+
+            // Backend -> Frontend tip dönüşümü
+      const transformed: MenuItem[] = data.map((item: any) => ({
+        id: item.menuItemId,
+        name: item.menuItemName,
+        description: item.menuItemDesc,
+        price: item.menuItemPrice,
+        image: item.menuItemPic,
+        category: item.menuItemCategory
+      }));
+
+      setMenuItems(transformed);
+    } catch (error) {
+      console.error('Error fetching menu items:', error);
+    }
+  };
+
+  fetchMenuItems();
+  }, []);
 
   const handleCheckout = () => {
     navigate('/payment');
@@ -70,7 +97,7 @@ const Menu: React.FC = () => {
         {/* Menu Section - Takes up full width when cart is closed */}
         <div className={isCartOpen ? 'lg:col-span-2' : 'lg:col-span-3'}>
           <div className={`grid grid-cols-1 ${isCartOpen ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'} gap-6`}>
-            {mockMenuItems.map((item) => (
+            {menuItems.map((item) => (
               <Card key={item.id} className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden">
                 {item.image && (
                   <div className="relative h-48 w-full">
