@@ -24,7 +24,6 @@ const Header = () => {
             <Link to="/menu" className="hover:text-primary">Menu</Link>
             <Link to="/table-management" className="hover:text-primary">Tables</Link>
             <Link to="/kitchen" className="hover:text-primary">Kitchen</Link>
-            <Link to="/online-order" className="hover:text-primary">Order Online</Link>
           </div>
           <Link 
             to="/cart" 
