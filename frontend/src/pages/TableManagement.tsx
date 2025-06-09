@@ -13,8 +13,7 @@ const TableManagement: React.FC = () => {
   const [showAddServer, setShowAddServer] = useState(false);
   const [newServer, setNewServer] = useState({
     employeeName: '',
-    employeeSalary: 0,
-    waiterTables: 0
+    employeeSalary: 0
   });
 
   useEffect(() => {
@@ -66,7 +65,20 @@ const TableManagement: React.FC = () => {
     try {
       const response = await fetch(API_ENDPOINTS.WAITERS.BASE);
       const data = await response.json();
-      setServers(data);
+      
+      // Her garsonun atanmış masa sayısını hesapla
+      const serversWithTableCount = data.map((server: Server) => {
+        const assignedTables = tables.filter(table => 
+          table.tableWaiter?.employeeId === server.employeeId
+        ).length;
+        
+        return {
+          ...server,
+          waiterTables: assignedTables
+        };
+      });
+      
+      setServers(serversWithTableCount);
     } catch (err) {
       console.error('Garsonlar yüklenirken hata:', err);
     }
@@ -105,7 +117,10 @@ const TableManagement: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newServer)
+        body: JSON.stringify({
+          ...newServer,
+          waiterTables: 0 // Başlangıçta 0 masa atanmış olarak başlar
+        })
       });
 
       if (!response.ok) {
@@ -116,8 +131,7 @@ const TableManagement: React.FC = () => {
       setShowAddServer(false);
       setNewServer({
         employeeName: '',
-        employeeSalary: 0,
-        waiterTables: 0
+        employeeSalary: 0
       });
     } catch (err) {
       setError('Garson eklenirken bir hata oluştu');
@@ -216,13 +230,13 @@ const TableManagement: React.FC = () => {
         <div className="space-x-4">
           <button
             onClick={() => setShowAddServer(true)}
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+            className="px-4 py-2 bg-indigo-600 text-black rounded-md hover:bg-indigo-700 transition-colors"
           >
             Yeni Garson Ekle
           </button>
           <button
             onClick={createTable}
-            className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+            className="px-4 py-2 bg-emerald-600 text-black rounded-md hover:bg-emerald-700 transition-colors"
           >
             Yeni Masa Ekle
           </button>
@@ -274,7 +288,7 @@ const TableManagement: React.FC = () => {
                       onClick={() => assignServer(selectedTable.tableId, server.employeeId)}
                       className="w-full p-2 text-left hover:bg-accent rounded-md transition-colors"
                     >
-                      {server.employeeName} - {server.waiterTables} Masa
+                      {server.employeeName}
                     </button>
                   ))}
                 </div>
@@ -296,11 +310,8 @@ const TableManagement: React.FC = () => {
             {servers.map((server) => (
               <Card key={server.employeeId} className="p-4 bg-white border-gray-200">
                 <div className="font-semibold text-lg mb-2">{server.employeeName}</div>
-                <div className="text-sm text-gray-600 mb-1">
-                  Maaş: {server.employeeSalary} TL
-                </div>
                 <div className="text-sm text-gray-600">
-                  Atanan Masa Sayısı: {server.waiterTables}
+                  Maaş: {server.employeeSalary} TL
                 </div>
               </Card>
             ))}
@@ -334,26 +345,16 @@ const TableManagement: React.FC = () => {
                   placeholder="Maaş miktarını girin"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Masa Sayısı</label>
-                <input
-                  type="number"
-                  value={newServer.waiterTables}
-                  onChange={(e) => setNewServer({ ...newServer, waiterTables: Number(e.target.value) })}
-                  className="w-full p-2 border rounded-md"
-                  placeholder="Masa sayısını girin"
-                />
-              </div>
               <div className="flex space-x-2">
                 <button
                   onClick={handleAddServer}
-                  className="flex-1 p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                  className="flex-1 p-2 bg-blue-500 text-black rounded-md hover:bg-blue-600"
                 >
                   Ekle
                 </button>
                 <button
                   onClick={() => setShowAddServer(false)}
-                  className="flex-1 p-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                  className="flex-1 p-2 bg-gray-500 text-black rounded-md hover:bg-gray-600"
                 >
                   İptal
                 </button>
