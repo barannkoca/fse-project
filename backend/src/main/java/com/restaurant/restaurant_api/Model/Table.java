@@ -14,7 +14,7 @@ public class Table {
     @Column(name = "total_cost", nullable = false)
     private int tableTotalCost;
     @Column(name = "is_table_available", nullable = false)
-    private boolean isTableAvailable;
+    private boolean isTableAvailable = true;
     @ManyToOne(cascade = CascadeType.MERGE)
     @JoinColumn(name = "waiter_id")
     private Waiter tableWaiter;

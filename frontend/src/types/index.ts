@@ -1,16 +1,21 @@
-export type Table = {
-  id: number;
-  number: string;
-  seats: number;
-  status: 'available' | 'occupied' | 'reserved';
-  serverId?: number;
-};
+export interface Table {
+  tableId: number;
+  tableTotalCost: number;
+  isTableAvailable: boolean;
+  tableWaiter?: {
+    employeeId: number;
+    employeeName: string;
+    employeeSalary: number;
+    waiterTables: number;
+  };
+}
 
-export type Server = {
-  id: number;
-  name: string;
-  assignedTables: number[];
-};
+export interface Server {
+  employeeId: number;
+  employeeName: string;
+  employeeSalary: number;
+  waiterTables: number;
+} 
 
 export type MenuItem = {
   id: number;

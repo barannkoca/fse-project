@@ -1,36 +1,151 @@
-import React, { useState } from 'react';
-import type { Table, Server } from '../types';
+import React, { useState, useEffect } from 'react';
+import type { Table, Server } from '../types/index';
 import { Card } from '@/components/ui/card';
-
-// Mock data for initial development
-const mockTables: Table[] = [
-  { id: 1, number: 'T1', seats: 4, status: 'available' },
-  { id: 2, number: 'T2', seats: 2, status: 'occupied' },
-  { id: 3, number: 'T3', seats: 6, status: 'reserved' },
-  { id: 4, number: 'T4', seats: 4, status: 'available' },
-];
-
-const mockServers: Server[] = [
-  { id: 1, name: 'John Doe', assignedTables: [2] },
-  { id: 2, name: 'Jane Smith', assignedTables: [3] },
-];
+import { API_ENDPOINTS } from '../config/api';
 
 const TableManagement: React.FC = () => {
-  const [tables, setTables] = useState<Table[]>(mockTables);
-  const [servers, setServers] = useState<Server[]>(mockServers);
+  const [tables, setTables] = useState<Table[]>([]);
+  const [servers, setServers] = useState<Server[]>([]);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [showServerAssignment, setShowServerAssignment] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showAddServer, setShowAddServer] = useState(false);
+  const [newServer, setNewServer] = useState({
+    employeeName: '',
+    employeeSalary: 0,
+    waiterTables: 0
+  });
 
-  const getTableColor = (status: Table['status']) => {
-    switch (status) {
-      case 'available':
-        return 'bg-green-100 hover:bg-green-200';
-      case 'occupied':
-        return 'bg-red-100 hover:bg-red-200';
-      case 'reserved':
-        return 'bg-yellow-100 hover:bg-yellow-200';
-      default:
-        return 'bg-gray-100';
+  useEffect(() => {
+    fetchTables();
+    fetchServers();
+  }, []);
+
+  const fetchTables = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(API_ENDPOINTS.TABLES.BASE);
+      const data = await response.json();
+      console.log('Backend\'den gelen ham veri:', JSON.stringify(data, null, 2));
+      
+      // Her bir masa için detaylı log
+      data.forEach((table: any, index: number) => {
+        console.log(`Masa ${index + 1} detayları:`, {
+          tableId: table.tableId,
+          tableTotalCost: table.tableTotalCost,
+          isTableAvailable: table.isTableAvailable,
+          isTableAvailableType: typeof table.isTableAvailable,
+          rawTable: table
+        });
+      });
+      
+      // Backend'den gelen veriyi Table tipine dönüştür
+      const processedTables: Table[] = data.map((table: any) => {
+        const processedTable: Table = {
+          tableId: table.tableId,
+          tableTotalCost: table.tableTotalCost,
+          isTableAvailable: table.tableAvailable,
+          tableWaiter: table.tableWaiter || undefined
+        };
+        return processedTable;
+      });
+      
+      console.log('İşlenmiş masalar:', processedTables);
+      setTables(processedTables);
+      setError(null);
+    } catch (err) {
+      setError('Masalar yüklenirken bir hata oluştu');
+      console.error('Masalar yüklenirken hata:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchServers = async () => {
+    try {
+      const response = await fetch(API_ENDPOINTS.WAITERS.BASE);
+      const data = await response.json();
+      setServers(data);
+    } catch (err) {
+      console.error('Garsonlar yüklenirken hata:', err);
+    }
+  };
+
+  const createTable = async () => {
+    try {
+      const newTable = {
+        tableTotalCost: 0,
+        isTableAvailable: true,
+        tableWaiter: null
+      };
+      
+      console.log('Yeni masa oluşturuluyor:', newTable);
+      const response = await fetch(API_ENDPOINTS.TABLES.BASE, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newTable)
+      });
+      const data = await response.json();
+      console.log('Masa oluşturuldu:', data);
+      
+      await fetchTables();
+    } catch (err) {
+      setError('Masa oluşturulurken bir hata oluştu');
+      console.error('Masa oluşturma hatası:', err);
+    }
+  };
+
+  const handleAddServer = async () => {
+    try {
+      const response = await fetch(API_ENDPOINTS.WAITERS.BASE, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newServer)
+      });
+
+      if (!response.ok) {
+        throw new Error('Garson eklenirken bir hata oluştu');
+      }
+
+      await fetchServers();
+      setShowAddServer(false);
+      setNewServer({
+        employeeName: '',
+        employeeSalary: 0,
+        waiterTables: 0
+      });
+    } catch (err) {
+      setError('Garson eklenirken bir hata oluştu');
+      console.error('Garson ekleme hatası:', err);
+    }
+  };
+
+  const getTableColor = (isAvailable: boolean) => {
+    if (isAvailable) {
+      return 'bg-green-50 hover:bg-green-100 border-green-500';
+    } else {
+      return 'bg-red-50 hover:bg-red-100 border-red-500';
+    }
+  };
+
+  const getTableStatusText = (isAvailable: boolean) => {
+    if (isAvailable) {
+      return 'Müsait';
+    } else {
+      return 'Dolu';
+    }
+  };
+
+  const getTableStatusColor = (isAvailable: boolean) => {
+    if (isAvailable) {
+      return 'text-green-700';
+    } else {
+      return 'text-red-700';
     }
   };
 
@@ -39,40 +154,108 @@ const TableManagement: React.FC = () => {
     setShowServerAssignment(true);
   };
 
-  const assignServer = (tableId: number, serverId: number) => {
-    setTables(tables.map(table => 
-      table.id === tableId ? { ...table, serverId } : table
-    ));
-    setServers(servers.map(server =>
-      server.id === serverId
-        ? { ...server, assignedTables: [...server.assignedTables, tableId] }
-        : server
-    ));
+  const assignServer = async (tableId: number, waiterId: number) => {
+    try {
+      // Garson bilgilerini bul
+      const selectedWaiter = servers.find(s => s.employeeId === waiterId);
+      if (!selectedWaiter) {
+        throw new Error('Garson bulunamadı');
+      }
+
+      // Mevcut masa bilgilerini bul
+      const currentTable = tables.find(t => t.tableId === tableId);
+      if (!currentTable) {
+        throw new Error('Masa bulunamadı');
+      }
+
+      // Güncellenecek masa bilgilerini hazırla
+      const updatedTable = {
+        tableId,
+        tableTotalCost: currentTable.tableTotalCost,
+        tableAvailable: currentTable.isTableAvailable, // Mevcut müsaitlik durumunu koru
+        tableWaiter: {
+          employeeId: selectedWaiter.employeeId,
+          employeeName: selectedWaiter.employeeName,
+          employeeSalary: selectedWaiter.employeeSalary,
+          waiterTables: selectedWaiter.waiterTables
+        }
+      };
+      
+      console.log('Güncellenecek masa bilgileri:', updatedTable);
+      
+      const response = await fetch(API_ENDPOINTS.TABLES.BY_ID(tableId), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedTable)
+      });
+
+      if (!response.ok) {
+        throw new Error('Masa güncellenirken bir hata oluştu');
+      }
+
+      const data = await response.json();
+      console.log('Masa güncellendi:', data);
+      
+      await fetchTables(); // Masaları yeniden yükle
+      setShowServerAssignment(false);
+    } catch (err) {
+      setError('Garson ataması yapılırken bir hata oluştu');
+      console.error('Garson atama hatası:', err);
+    }
   };
+
+  if (loading) return <div className="container mx-auto p-4">Yükleniyor...</div>;
+  if (error) return <div className="container mx-auto p-4 text-red-500">{error}</div>;
 
   return (
     <div className="container mx-auto p-4">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Masa Yönetimi</h2>
+        <div className="space-x-4">
+          <button
+            onClick={() => setShowAddServer(true)}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+          >
+            Yeni Garson Ekle
+          </button>
+          <button
+            onClick={createTable}
+            className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+          >
+            Yeni Masa Ekle
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Table Layout */}
         <div>
-          <h2 className="text-2xl font-bold mb-4">Table Layout</h2>
+          <h2 className="text-2xl font-bold mb-4">Masa Düzeni</h2>
           <div className="grid grid-cols-2 gap-4">
             {tables.map((table) => (
               <Card
-                key={table.id}
-                className={'p-4 cursor-pointer transition-colors ' + getTableColor(table.status)}
+                key={table.tableId}
+                className={`p-4 cursor-pointer transition-all duration-200 ${
+                  table.isTableAvailable 
+                    ? 'bg-green-50 hover:bg-green-100 border-green-500' 
+                    : 'bg-red-50 hover:bg-red-100 border-red-500'
+                }`}
                 onClick={() => handleTableClick(table)}
               >
-                <div className="text-lg font-semibold">Table {table.number}</div>
-                <div className="text-sm text-gray-600">
-                  {table.seats} seats
+                <div className="text-lg font-semibold mb-2">Masa {table.tableId}</div>
+                <div className="text-sm text-gray-600 mb-1">
+                  Toplam Tutar: {table.tableTotalCost} TL
                 </div>
-                <div className="text-sm font-medium capitalize">
-                  {table.status}
+                <div className={`text-sm font-medium ${
+                  table.isTableAvailable ? 'text-green-700' : 'text-red-700'
+                }`}>
+                  {table.isTableAvailable ? 'Müsait' : 'Dolu'}
                 </div>
-                {table.serverId && (
-                  <div className="text-sm text-gray-600">
-                    Server: {servers.find(s => s.id === table.serverId)?.name}
+                {table.tableWaiter && (
+                  <div className="text-sm text-gray-600 mt-1">
+                    Garson: {table.tableWaiter.employeeName}
                   </div>
                 )}
               </Card>
@@ -82,19 +265,16 @@ const TableManagement: React.FC = () => {
           {/* Server Assignment Dialog */}
           {selectedTable && showServerAssignment && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-              <Card className="w-96 p-4">
-                <h3 className="text-lg font-semibold mb-4">Assign Server to Table {selectedTable.number}</h3>
+              <Card className="w-96 p-4 bg-white">
+                <h3 className="text-lg font-semibold mb-4">Masa {selectedTable.tableId} için Garson Ata</h3>
                 <div className="space-y-2">
                   {servers.map(server => (
                     <button
-                      key={server.id}
-                      onClick={() => {
-                        assignServer(selectedTable.id, server.id);
-                        setShowServerAssignment(false);
-                      }}
+                      key={server.employeeId}
+                      onClick={() => assignServer(selectedTable.tableId, server.employeeId)}
                       className="w-full p-2 text-left hover:bg-accent rounded-md transition-colors"
                     >
-                      {server.name}
+                      {server.employeeName} - {server.waiterTables} Masa
                     </button>
                   ))}
                 </div>
@@ -102,7 +282,7 @@ const TableManagement: React.FC = () => {
                   onClick={() => setShowServerAssignment(false)}
                   className="mt-4 w-full p-2 bg-secondary text-secondary-foreground rounded-md"
                 >
-                  Cancel
+                  İptal
                 </button>
               </Card>
             </div>
@@ -111,19 +291,77 @@ const TableManagement: React.FC = () => {
 
         {/* Server Assignment */}
         <div>
-          <h2 className="text-2xl font-bold mb-4">Servers</h2>
+          <h2 className="text-2xl font-bold mb-4">Garsonlar</h2>
           <div className="space-y-4">
             {servers.map((server) => (
-              <Card key={server.id} className="p-4">
-                <div className="font-semibold">{server.name}</div>
+              <Card key={server.employeeId} className="p-4 bg-white border-gray-200">
+                <div className="font-semibold text-lg mb-2">{server.employeeName}</div>
+                <div className="text-sm text-gray-600 mb-1">
+                  Maaş: {server.employeeSalary} TL
+                </div>
                 <div className="text-sm text-gray-600">
-                  Assigned Tables: {server.assignedTables.map(t => tables.find(table => table.id === t)?.number).join(', ')}
+                  Atanan Masa Sayısı: {server.waiterTables}
                 </div>
               </Card>
             ))}
           </div>
         </div>
       </div>
+
+      {/* Add Server Dialog */}
+      {showAddServer && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+          <Card className="w-96 p-4 bg-white">
+            <h3 className="text-lg font-semibold mb-4">Yeni Garson Ekle</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Garson Adı</label>
+                <input
+                  type="text"
+                  value={newServer.employeeName}
+                  onChange={(e) => setNewServer({ ...newServer, employeeName: e.target.value })}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="Garson adını girin"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Maaş</label>
+                <input
+                  type="number"
+                  value={newServer.employeeSalary}
+                  onChange={(e) => setNewServer({ ...newServer, employeeSalary: Number(e.target.value) })}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="Maaş miktarını girin"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Masa Sayısı</label>
+                <input
+                  type="number"
+                  value={newServer.waiterTables}
+                  onChange={(e) => setNewServer({ ...newServer, waiterTables: Number(e.target.value) })}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="Masa sayısını girin"
+                />
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleAddServer}
+                  className="flex-1 p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                >
+                  Ekle
+                </button>
+                <button
+                  onClick={() => setShowAddServer(false)}
+                  className="flex-1 p-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                >
+                  İptal
+                </button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
