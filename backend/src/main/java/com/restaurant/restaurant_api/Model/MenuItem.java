@@ -84,4 +84,16 @@ public class MenuItem {
     public void setMenuItemCategory(String menuItemCategory) {
         this.menuItemCategory = menuItemCategory;
     }
+
+    @Override
+    public String toString() {
+        return "MenuItem{" +
+                "menuItemId=" + menuItemId +
+                ", menuItemName='" + menuItemName + '\'' +
+                ", menuItemDesc='" + menuItemDesc + '\'' +
+                ", menuItemPrice=" + menuItemPrice +
+                ", menuItemPic='" + menuItemPic + '\'' +
+                ", menuItemCategory='" + menuItemCategory + '\'' +
+                '}';
+    }
 }

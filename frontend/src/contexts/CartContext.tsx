@@ -1,10 +1,9 @@
 import React, { createContext, useContext, useState } from 'react';
-import type { MenuItem } from '../types';
+import type { MenuItem, OrderItem } from '../types';
 
 export type CartItem = {
   menuItem: MenuItem;
   quantity: number;
-  notes?: string;
 };
 
 type CartContextType = {
@@ -16,6 +15,7 @@ type CartContextType = {
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
+  getOrderItems: () => OrderItem[];
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -62,6 +62,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + (item.menuItem.price * item.quantity), 0);
 
+  const getOrderItems = (): OrderItem[] => {
+    return items.map(item => ({
+      menuItemId: item.menuItem.id,
+      quantity: item.quantity
+    }));
+  };
+
   return (
     <CartContext.Provider value={{
       items,
@@ -71,7 +78,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateQuantity,
       clearCart,
       totalItems,
-      totalPrice
+      totalPrice,
+      getOrderItems
     }}>
       {children}
     </CartContext.Provider>

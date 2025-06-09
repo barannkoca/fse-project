@@ -17,39 +17,34 @@ export interface Server {
   waiterTables: number;
 } 
 
-export type MenuItem = {
+export interface MenuItem {
   id: number;
   name: string;
   description: string;
   price: number;
+  image: string;
   category: string;
-  image?: string;
-};
+}
 
-export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'served' | 'completed' | 'cancelled';
+// Backend'deki orderStatue değerleri
+export type OrderStatus = 0 | 1 | 2; // 0: pending, 1: preparing, 2: completed
 
-export type PaymentMethod = 'cash' | 'credit_card' | 'online';
-
-export type PaymentStatus = 'unpaid' | 'processing' | 'paid' | 'refunded';
-
-export type OrderItem = {
-  id: number;
-  name: string;
+export interface OrderItem {
+  menuItemId: number;
   quantity: number;
-  price: number;
-  menuItemId?: number; // Reference to the original menu item
-  status?: OrderStatus; // Individual item status
-};
+}
 
-export type Order = {
-  id: string;
-  items: OrderItem[];
-  tableId: number;
-  status: OrderStatus;
-  total: number;
-  createdAt: Date;
-  updatedAt: Date;
-  paymentStatus: PaymentStatus;
-  paymentMethod?: PaymentMethod;
-  notes?: string;
-};
+export interface Order {
+  orderId: number;
+  orderTable: {
+    tableId: number;
+  };
+  orderPrice: number;
+  orderStatue: OrderStatus;
+  orderMenuItems: OrderItem[];
+}
+
+// Frontend için ek tipler
+export type FrontendOrderStatus = 'pending' | 'preparing' | 'completed';
+export type PaymentMethod = 'cash' | 'credit_card' | 'mobile_payment';
+export type PaymentStatus = 'pending' | 'completed' | 'failed';

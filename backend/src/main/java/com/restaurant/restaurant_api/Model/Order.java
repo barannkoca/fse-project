@@ -25,7 +25,7 @@ public class Order {
     private short orderStatue;
 
     @ManyToOne(cascade = CascadeType.MERGE)
-    @JoinColumn(name = "card_id", nullable = false)
+    @JoinColumn(name = "card_id")
     private Card orderCard;
 
     @ManyToMany(cascade = CascadeType.MERGE)
@@ -97,5 +97,17 @@ public class Order {
 
     public void setOrderMenuItems(List<MenuItem> orderMenuItems) {
         this.orderMenuItems = orderMenuItems;
+    }
+
+    @Override
+    public String toString() {
+        return "Order{" +
+                "orderId=" + orderId +
+                ", orderTable=" + (orderTable != null ? orderTable.getTableId() : "null") +
+                ", orderPrice=" + orderPrice +
+                ", orderStatue=" + orderStatue +
+                ", orderCard=" + (orderCard != null ? orderCard.getCardId() : "null") +
+                ", orderMenuItems=" + orderMenuItems +
+                '}';
     }
 }

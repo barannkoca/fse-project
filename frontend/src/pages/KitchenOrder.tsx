@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { Order, OrderStatus } from '../types';
+import type { Order, OrderStatus } from '../types/index.tx';
 
 // Mock data - replace with real data later
 const mockOrders: Order[] = [
